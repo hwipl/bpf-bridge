@@ -12,5 +12,9 @@ char _license[] SEC("license") = "GPL";
 SEC("bridge_forward")
 int _bridge_forward(struct __sk_buff *skb)
 {
+	/* get ingress interface of packet */
+	__u32 ifindex = skb->ingress_ifindex;
+	bpf_printk("bpf_bridge: if: %d", ifindex);
+
 	return TC_ACT_OK;
 }
