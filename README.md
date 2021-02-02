@@ -7,6 +7,6 @@ Build requirements:
 Build instructions (based on `tc-bpf(8)`):
 
 ```console
-$ clang -O2 -emit-llvm -c tc_bridge_kern.c -o - | \
+$ clang -O2 -emit-llvm -c tc_bridge_kern.c -o - -fno-stack-protector | \
         llc -march=bpf -filetype=obj -o tc_bridge_kern.o
 ```
