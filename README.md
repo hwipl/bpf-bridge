@@ -25,8 +25,14 @@ Unloading:
 # tc qdisc del dev <dev> clsact
 ```
 
-Debug output:
+Debug output (if present):
 
 ```console
 # cat /sys/kernel/debug/tracing/trace
+```
+
+Dump mac table:
+
+```console
+# bpftool map dump pinned /sys/fs/bpf/tc/globals/bpf_bridge_mac_table
 ```
