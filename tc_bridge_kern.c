@@ -45,9 +45,17 @@ int _bridge_forward(struct __sk_buff *skb)
 		return TC_ACT_OK;
 
 	/* add ingress interface and source mac of packet to macs map */
-	__u32 ifindex = skb->ingress_ifindex;
+	__u32 in_ifindex = skb->ingress_ifindex;
 	uint8_t *src_mac = eth->ether_shost;
-	bpf_map_update_elem(&bpf_bridge_mac_table, src_mac, &ifindex, BPF_ANY);
+	bpf_map_update_elem(&bpf_bridge_mac_table, src_mac, &in_ifindex,
+			    BPF_ANY);
 
-	return TC_ACT_OK;
+	/* forward packet */
+	uint8_t *dst_mac = eth->ether_dhost;
+	__u32 *out_ifindex = bpf_map_lookup_elem(&bpf_bridge_mac_table,
+						 dst_mac);
+	if (!out_ifindex) {
+		return TC_ACT_OK;
+	}
+	return bpf_redirect(*out_ifindex, 0);
 }
