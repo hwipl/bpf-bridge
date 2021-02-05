@@ -23,6 +23,15 @@ struct bpf_elf_map {
 	__u32 pinning;
 };
 
+/* array map of indexes of all interfaces of the bridge */
+struct bpf_elf_map SEC("maps") bpf_bridge_ifs = {
+	.type = BPF_MAP_TYPE_ARRAY,
+	.size_key = sizeof(int),
+	.size_value = sizeof(__u32),
+	.pinning = PIN_GLOBAL_NS,
+	.max_elem = 16,
+};
+
 /* hash map for mapping mac address to interface index */
 struct bpf_elf_map SEC("maps") bpf_bridge_mac_table = {
 	.type = BPF_MAP_TYPE_LRU_HASH,
@@ -31,6 +40,33 @@ struct bpf_elf_map SEC("maps") bpf_bridge_mac_table = {
 	.pinning = PIN_GLOBAL_NS,
 	.max_elem = 2048,
 };
+
+/* clone packet in skb and forward it from interface index in_ifindex to
+ * out_ifindex
+ */
+void _forward_clone(struct __sk_buff *skb, __u32 *in_ifindex,
+		    __u32 *out_ifindex)
+{
+	if (!in_ifindex || !out_ifindex) {
+		return;
+	}
+	if (*out_ifindex == *in_ifindex) {
+		return;
+	}
+	bpf_clone_redirect(skb, *out_ifindex, 0);
+}
+
+/* forward mcast packet in skb received on interface index in_ifindex to all
+ * interfaces of the bridge
+ */
+void _forward_mcast(struct __sk_buff *skb, __u32 *in_ifindex)
+{
+	for (int i = 0; i < 16; i++) {
+		int key = i;
+		__u32 *out_ifindex = bpf_map_lookup_elem(&bpf_bridge_ifs, &key);
+		_forward_clone(skb, in_ifindex, out_ifindex);
+	}
+}
 
 /* forward packets */
 SEC("bridge_forward")
@@ -50,8 +86,14 @@ int _bridge_forward(struct __sk_buff *skb)
 	bpf_map_update_elem(&bpf_bridge_mac_table, src_mac, &in_ifindex,
 			    BPF_ANY);
 
-	/* forward packet */
+	/* forward multicast packet */
 	uint8_t *dst_mac = eth->ether_dhost;
+	if (dst_mac[0] & 1) {
+		_forward_mcast(skb, &in_ifindex);
+		return TC_ACT_OK;
+	}
+
+	/* forward unicast packet */
 	__u32 *out_ifindex = bpf_map_lookup_elem(&bpf_bridge_mac_table,
 						 dst_mac);
 	if (!out_ifindex) {
