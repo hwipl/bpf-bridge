@@ -34,6 +34,7 @@ void dump_mac_table() {
 	}
 }
 
-void main() {
+int main() {
 	dump_mac_table();
+	return 0;
 }
