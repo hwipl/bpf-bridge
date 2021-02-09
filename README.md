@@ -1,8 +1,24 @@
 # bpf-bridge
 
 Build requirements:
-* llvm, clang
+* llvm, clang, (gcc)
 * libbpf
+
+## user space part
+
+Building with gcc:
+
+```console
+$ gcc tc_bridge_user.c -o tc_bridge_user -lbpf
+```
+
+Building with clang:
+
+```console
+$ clang tc_bridge_user.c -o tc_bridge_user -lbpf
+```
+
+## kernel part
 
 Build instructions (based on `tc-bpf(8)`):
 
