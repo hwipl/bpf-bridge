@@ -8,6 +8,34 @@
 /* pinned bpf map file of bridge mac table */
 #define mac_table_file "/sys/fs/bpf/tc/globals/bpf_bridge_mac_table"
 
+/* pinned bpf map file of bridge interfaces */
+#define interfaces_file "/sys/fs/bpf/tc/globals/bpf_bridge_ifs"
+
+/* dump bridge interfaces to console */
+void dump_interfaces() {
+	/* open interfaces map */
+	int interfaces_fd = bpf_obj_get(interfaces_file);
+	if (interfaces_fd < 0) {
+		fprintf(stderr, "bpf_obj_get(%s): %s(%d)\n", interfaces_file,
+			strerror(errno), errno);
+		return;
+	}
+
+	/* dump interface entries */
+	int next_key = -1;
+	int cur_key;
+	__u32 ifindex;
+	printf("slot: ifindex\n");
+	printf("=============\n");
+	while (bpf_map_get_next_key(interfaces_fd, &cur_key, &next_key) == 0) {
+		bpf_map_lookup_elem(interfaces_fd, &next_key, &ifindex);
+		if (ifindex != 0) {
+			printf("%2d:   %d\n", next_key, ifindex);
+		}
+		cur_key = next_key;
+	}
+}
+
 /* dump content of bridge mac address table to console */
 void dump_mac_table() {
 	/* open bridge mac table */
@@ -35,6 +63,7 @@ void dump_mac_table() {
 }
 
 int main() {
+	dump_interfaces();
 	dump_mac_table();
 	return 0;
 }
