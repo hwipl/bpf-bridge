@@ -32,7 +32,7 @@ int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 
 	/* dump interface entries */
 	int next_key = -1;
-	int cur_key;
+	int cur_key = -1;
 	__u32 cur_value;
 	while (bpf_map_get_next_key(interfaces_fd, &cur_key, &next_key) == 0) {
 		bpf_map_lookup_elem(interfaces_fd, &next_key, &cur_value);
