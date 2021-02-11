@@ -11,8 +11,14 @@
 /* pinned bpf map file of bridge interfaces */
 #define interfaces_file "/sys/fs/bpf/tc/globals/bpf_bridge_ifs"
 
-/* dump bridge interfaces to console */
-void dump_interfaces() {
+/* operations when iterating interface map entries */
+enum iter_if_ops {
+	NONE,
+	PRINT,
+};
+
+/* iterate over interfaces map and call f(key, value) on each entry */
+void _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 	/* open interfaces map */
 	int interfaces_fd = bpf_obj_get(interfaces_file);
 	if (interfaces_fd < 0) {
@@ -24,16 +30,30 @@ void dump_interfaces() {
 	/* dump interface entries */
 	int next_key = -1;
 	int cur_key;
-	__u32 ifindex;
+	__u32 cur_value;
+	while (bpf_map_get_next_key(interfaces_fd, &cur_key, &next_key) == 0) {
+		bpf_map_lookup_elem(interfaces_fd, &next_key, &cur_value);
+		cur_key = next_key;
+
+		/* skip empty entries */
+		if (cur_value == 0) {
+			continue;
+		}
+
+		/* perform "op" on each entry */
+		switch (op) {
+		case PRINT:
+			printf("%2d:   %d\n", cur_key, cur_value);
+			break;
+		}
+	}
+}
+
+/* dump bridge interfaces to console */
+void dump_interfaces() {
 	printf("slot: ifindex\n");
 	printf("=============\n");
-	while (bpf_map_get_next_key(interfaces_fd, &cur_key, &next_key) == 0) {
-		bpf_map_lookup_elem(interfaces_fd, &next_key, &ifindex);
-		if (ifindex != 0) {
-			printf("%2d:   %d\n", next_key, ifindex);
-		}
-		cur_key = next_key;
-	}
+	_iterate_interfaces(PRINT, 0);
 }
 
 /* dump content of bridge mac address table to console */
