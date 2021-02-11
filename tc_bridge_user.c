@@ -2,6 +2,8 @@
 #include <linux/bpf.h>
 #include <bpf/bpf.h>
 
+#include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -121,8 +123,46 @@ void dump_mac_table() {
 	}
 }
 
-int main() {
-	dump_interfaces();
-	dump_mac_table();
-	return 0;
+/* print usage to console */
+void print_usage(char *name) {
+	printf("Usage: %s [...]\n", name);
+	printf("       -a <ifindex>      add interface\n");
+	printf("       -d <ifindex>      remove interface\n");
+	printf("       -l                list interfaces\n");
+	printf("       -s                show mac addresses\n");
+}
+
+/* parse command line arguments and run everything from there */
+int parse_args(int argc, char **argv) {
+	int ifindex;
+	int opt;
+	while ((opt = getopt(argc, argv, "a:d:ls")) != -1) {
+		switch (opt) {
+		case 'a':
+			/* add an interface */
+			ifindex = atoi(optarg);
+			add_interface(ifindex);
+			return 0;
+		case 'd':
+			/* remove an interface */
+			ifindex = atoi(optarg);
+			del_interface(ifindex);
+			return 0;
+		case 'l':
+			/* list interfaces */
+			dump_interfaces();
+			return 0;
+		case 's':
+			/* dump mac addresses */
+			dump_mac_table();
+			return 0;
+		default:
+			print_usage(argv[0]);
+			return 0;
+		}
+	}
+}
+
+int main(int argc, char **argv) {
+	return parse_args(argc, argv);
 }
