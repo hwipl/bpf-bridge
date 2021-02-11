@@ -50,7 +50,7 @@ void _forward_clone(struct __sk_buff *skb, __u32 *in_ifindex,
 	if (!in_ifindex || !out_ifindex) {
 		return;
 	}
-	if (*out_ifindex == *in_ifindex) {
+	if (*out_ifindex == 0 || *out_ifindex == *in_ifindex) {
 		return;
 	}
 	bpf_clone_redirect(skb, *out_ifindex, 0);
