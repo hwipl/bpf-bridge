@@ -14,6 +14,7 @@
 /* operations when iterating interface map entries */
 enum iter_if_ops {
 	NONE,
+	ADD,
 	DELETE,
 	FIND,
 	PRINT,
@@ -37,13 +38,14 @@ int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 		bpf_map_lookup_elem(interfaces_fd, &next_key, &cur_value);
 		cur_key = next_key;
 
-		/* skip empty entries */
-		if (cur_value == 0) {
-			continue;
-		}
-
 		/* perform "op" on each entry */
 		switch (op) {
+		case ADD:
+			if (cur_value != 0) {
+				break;
+			}
+			return bpf_map_update_elem(interfaces_fd, &cur_key,
+						   &value, BPF_ANY);
 		case DELETE:
 			if (cur_value == value) {
 				bpf_map_delete_elem(interfaces_fd, &cur_key);
@@ -55,6 +57,9 @@ int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 			}
 			break;
 		case PRINT:
+			if (cur_value == 0) {
+				continue;
+			}
 			printf("%2d:   %d\n", cur_key, cur_value);
 			break;
 		}
@@ -63,14 +68,22 @@ int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 	return 0;
 }
 
-/* remove interface with ifindex from bridge */
-void del_interface(__u32 ifindex) {
-	_iterate_interfaces(DELETE, ifindex);
-}
-
 /* find interface with ifindex in bridge */
 int find_interface(__u32 ifindex) {
 	return _iterate_interfaces(FIND, ifindex);
+}
+
+/* add interface with ifindex to bridge */
+void add_interface(__u32 ifindex) {
+	if (find_interface(ifindex)) {
+		return;
+	}
+	_iterate_interfaces(ADD, ifindex);
+}
+
+/* remove interface with ifindex from bridge */
+void del_interface(__u32 ifindex) {
+	_iterate_interfaces(DELETE, ifindex);
 }
 
 /* dump bridge interfaces to console */
