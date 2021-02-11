@@ -48,7 +48,9 @@ int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 						   &value, BPF_ANY);
 		case DELETE:
 			if (cur_value == value) {
-				bpf_map_delete_elem(interfaces_fd, &cur_key);
+				__u32 zero = 0;
+				bpf_map_update_elem(interfaces_fd, &cur_key,
+						    &zero, BPF_ANY);
 			}
 			break;
 		case FIND:
