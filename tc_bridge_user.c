@@ -14,17 +14,18 @@
 /* operations when iterating interface map entries */
 enum iter_if_ops {
 	NONE,
+	FIND,
 	PRINT,
 };
 
 /* iterate over interfaces map and call f(key, value) on each entry */
-void _iterate_interfaces(enum iter_if_ops op, __u32 value) {
+int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 	/* open interfaces map */
 	int interfaces_fd = bpf_obj_get(interfaces_file);
 	if (interfaces_fd < 0) {
 		fprintf(stderr, "bpf_obj_get(%s): %s(%d)\n", interfaces_file,
 			strerror(errno), errno);
-		return;
+		return 0;
 	}
 
 	/* dump interface entries */
@@ -42,11 +43,23 @@ void _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 
 		/* perform "op" on each entry */
 		switch (op) {
+		case FIND:
+			if (cur_value == value) {
+				return 1;
+			}
+			break;
 		case PRINT:
 			printf("%2d:   %d\n", cur_key, cur_value);
 			break;
 		}
 	}
+
+	return 0;
+}
+
+/* find interface with ifindex in bridge */
+int find_interface(__u32 ifindex) {
+	return _iterate_interfaces(FIND, ifindex);
 }
 
 /* dump bridge interfaces to console */
