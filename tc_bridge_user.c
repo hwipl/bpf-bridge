@@ -42,6 +42,8 @@ int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 
 		/* perform "op" on each entry */
 		switch (op) {
+		case NONE:
+			return 0;
 		case ADD:
 			if (cur_value != 0) {
 				break;
