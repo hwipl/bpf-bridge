@@ -171,6 +171,8 @@ function delete_interfaces {
 
 # run test(s)
 function run_test {
+	echo "Running test..."
+
 	# test connectivity with ping from client1 to client2
 	$IP netns exec $NS_CLIENT1 $PING -c 10 192.168.1.2
 
