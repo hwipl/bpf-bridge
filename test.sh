@@ -10,6 +10,11 @@ CAT=/usr/bin/cat
 MOUNT=/usr/bin/mount
 UMOUNT=/usr/bin/umount
 
+# names of network namespaces
+NS_BRIDGE="bpf-bridge-test-bridge"
+NS_CLIENT1="bpf-bridge-test-client1"
+NS_CLIENT2="bpf-bridge-test-client2"
+
 # build everything for testing
 function build {
 	echo "Building everything..."
@@ -17,10 +22,6 @@ function build {
 }
 
 # create testing network namespaces
-NS_BRIDGE="bpf-bridge-test-bridge"
-NS_CLIENT1="bpf-bridge-test-client1"
-NS_CLIENT2="bpf-bridge-test-client2"
-
 function create_namespaces {
 	echo "Creating testing network namespaces..."
 	$IP netns add $NS_BRIDGE
@@ -31,7 +32,18 @@ function create_namespaces {
 	$IP netns list
 }
 
-# mount bpf filesystem in network bridge network namespace
+# delete testing network namespaces
+function delete_namespaces {
+	echo "Removing testing network namespaces..."
+	$IP netns delete $NS_BRIDGE
+	$IP netns delete $NS_CLIENT1
+	$IP netns delete $NS_CLIENT2
+
+	echo "Network namespaces:"
+	$IP netns list
+}
+
+# mount bpf filesystem in bridge network namespace
 function mount_bpffs {
 	echo "Mounting extra bpf filesystem..."
 	BPFFS=/tmp/bpf-bridge-test-bpffs
@@ -41,6 +53,16 @@ function mount_bpffs {
 	echo "BPF folders:"
 	$IP netns exec $NS_BRIDGE $MOUNT | grep "type bpf"
 	$IP netns exec $NS_BRIDGE ls $BPFFS
+}
+
+# umount bpf filesystem in bridge network namespace
+function umount_bpffs {
+	echo "Umounting extra bpf filesystem..."
+	$UMOUNT $BPFFS
+	rmdir $BPFFS
+
+	echo "BPF folders:"
+	$IP netns exec $NS_BRIDGE $MOUNT | grep "type bpf"
 }
 
 # add veth interfaces to network namespaces
@@ -66,6 +88,23 @@ function add_veths {
 	echo "Client2 interfaces:"
 	$IP netns exec $NS_CLIENT2 $IP link show
 }
+
+# delete veth interfaces from network namespaces
+function delete_veths {
+	echo "Removing veth interfaces..."
+	$IP netns exec $NS_BRIDGE $IP link delete veth0 type veth
+	$IP netns exec $NS_BRIDGE $IP link delete veth1 type veth
+
+	echo "Bridge interfaces:"
+	$IP netns exec $NS_BRIDGE $IP link show
+
+	echo "Client1 interfaces:"
+	$IP netns exec $NS_CLIENT1 $IP link show
+
+	echo "Client2 interfaces:"
+	$IP netns exec $NS_CLIENT2 $IP link show
+}
+
 
 # add ip addresses to client veth interfaces
 function add_ips {
@@ -95,6 +134,17 @@ function attach_bpf {
 	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
 }
 
+# detach bpf program from bridge
+function detach_bpf {
+	echo "Removing bpf program from bridge..."
+	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth0 clsact
+	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth1 clsact
+
+	echo "Bridge tc filters:"
+	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
+	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
+}
+
 # add interfaces to bridge interface map
 function add_interfaces {
 echo "Adding interfaces to bridge interface map..."
@@ -109,16 +159,6 @@ echo "Adding interfaces to bridge interface map..."
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -l
 }
 
-# run test(s)
-function run_test {
-	# test connectivity with ping from client1 to client2
-	$IP netns exec $NS_CLIENT1 $PING -c 10 192.168.1.2
-
-	# show bridge mac address table
-	echo "Bridge mac address table:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -s
-}
-
 # delete interfaces from bridge interface map
 function delete_interfaces {
 	echo "Removing interfaces from bridge interface map..."
@@ -129,52 +169,14 @@ function delete_interfaces {
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -l
 }
 
-# delete bpf program from bridge
-function detach_bpf {
-	echo "Removing bpf program from bridge..."
-	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth0 clsact
-	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth1 clsact
+# run test(s)
+function run_test {
+	# test connectivity with ping from client1 to client2
+	$IP netns exec $NS_CLIENT1 $PING -c 10 192.168.1.2
 
-	echo "Bridge tc filters:"
-	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
-	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
-}
-
-# delete veth interfaces
-function delete_veths {
-	echo "Removing veth interfaces..."
-	$IP netns exec $NS_BRIDGE $IP link delete veth0 type veth
-	$IP netns exec $NS_BRIDGE $IP link delete veth1 type veth
-
-	echo "Bridge interfaces:"
-	$IP netns exec $NS_BRIDGE $IP link show
-
-	echo "Client1 interfaces:"
-	$IP netns exec $NS_CLIENT1 $IP link show
-
-	echo "Client2 interfaces:"
-	$IP netns exec $NS_CLIENT2 $IP link show
-}
-
-# unmount extra bpffs
-function umount_bpffs {
-	echo "Umounting extra bpf filesystem..."
-	$UMOUNT $BPFFS
-	rmdir $BPFFS
-
-	echo "BPF folders:"
-	$IP netns exec $NS_BRIDGE $MOUNT | grep "type bpf"
-}
-
-# delete testing network namespaces again
-function delete_namespaces {
-	echo "Removing testing network namespaces..."
-	$IP netns delete $NS_BRIDGE
-	$IP netns delete $NS_CLIENT1
-	$IP netns delete $NS_CLIENT2
-
-	echo "Network namespaces:"
-	$IP netns list
+	# show bridge mac address table
+	echo "Bridge mac address table:"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER -s
 }
 
 # build code
