@@ -10,6 +10,9 @@ CAT=/usr/bin/cat
 MOUNT=/usr/bin/mount
 UMOUNT=/usr/bin/umount
 
+# show verbose output?
+VERBOSE=false
+
 # names of network namespaces
 NS_BRIDGE="bpf-bridge-test-bridge"
 NS_CLIENT1="bpf-bridge-test-client1"
@@ -28,6 +31,10 @@ function create_namespaces {
 	$IP netns add $NS_CLIENT1
 	$IP netns add $NS_CLIENT2
 
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
+
 	echo "Network namespaces:"
 	$IP netns list
 }
@@ -38,6 +45,10 @@ function delete_namespaces {
 	$IP netns delete $NS_BRIDGE
 	$IP netns delete $NS_CLIENT1
 	$IP netns delete $NS_CLIENT2
+
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
 
 	echo "Network namespaces:"
 	$IP netns list
@@ -50,6 +61,10 @@ function mount_bpffs {
 	mkdir $BPFFS
 	$MOUNT -t bpf bpf $BPFFS
 
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
+
 	echo "BPF folders:"
 	$IP netns exec $NS_BRIDGE $MOUNT | grep "type bpf"
 	$IP netns exec $NS_BRIDGE ls $BPFFS
@@ -60,6 +75,10 @@ function umount_bpffs {
 	echo "Umounting extra bpf filesystem..."
 	$UMOUNT $BPFFS
 	rmdir $BPFFS
+
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
 
 	echo "BPF folders:"
 	$IP netns exec $NS_BRIDGE $MOUNT | grep "type bpf"
@@ -79,6 +98,10 @@ function add_veths {
 	$IP netns exec $NS_CLIENT1 $IP link set veth00 up
 	$IP netns exec $NS_CLIENT2 $IP link set veth10 up
 
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
+
 	echo "Bridge interfaces:"
 	$IP netns exec $NS_BRIDGE $IP link show
 
@@ -94,6 +117,10 @@ function delete_veths {
 	echo "Removing veth interfaces..."
 	$IP netns exec $NS_BRIDGE $IP link delete veth0 type veth
 	$IP netns exec $NS_BRIDGE $IP link delete veth1 type veth
+
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
 
 	echo "Bridge interfaces:"
 	$IP netns exec $NS_BRIDGE $IP link show
@@ -112,6 +139,10 @@ function add_ips {
 	$IP netns exec $NS_CLIENT1 $IP address add 192.168.1.1/24 dev veth00
 	$IP netns exec $NS_CLIENT2 $IP address add 192.168.1.2/24 dev veth10
 
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
+
 	echo "Client1 interface addresses:"
 	$IP netns exec $NS_CLIENT1 $IP address show dev veth00
 
@@ -129,6 +160,10 @@ function attach_bpf {
 	$IP netns exec $NS_BRIDGE $TC filter add dev veth1 ingress bpf \
 		direct-action obj tc_bridge_kern.o sec bridge_forward
 
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
+
 	echo "Bridge tc filters:"
 	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
 	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
@@ -139,6 +174,10 @@ function detach_bpf {
 	echo "Removing bpf program from bridge..."
 	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth0 clsact
 	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth1 clsact
+
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
 
 	echo "Bridge tc filters:"
 	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
@@ -155,6 +194,10 @@ echo "Adding interfaces to bridge interface map..."
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -a "$veth0_ifindex"
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -a "$veth1_ifindex"
 
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
+
 	echo "Bridge interface map interfaces:"
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -l
 }
@@ -164,6 +207,10 @@ function delete_interfaces {
 	echo "Removing interfaces from bridge interface map..."
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -d "$veth0_ifindex"
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -d "$veth1_ifindex"
+
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
 
 	echo "Bridge interface map interfaces:"
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -l
@@ -176,10 +223,19 @@ function run_test {
 	# test connectivity with ping from client1 to client2
 	$IP netns exec $NS_CLIENT1 $PING -c 10 192.168.1.2
 
+	if [[ "$VERBOSE" == false ]]; then
+		return
+	fi
+
 	# show bridge mac address table
 	echo "Bridge mac address table:"
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -s
 }
+
+# set verbose mode with command line argument "-v"
+if [[ "$1" == "-v" ]]; then
+	VERBOSE=true
+fi
 
 # build code
 build
