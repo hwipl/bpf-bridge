@@ -13,7 +13,7 @@ $ ./build.sh
 Testing:
 
 ```console
-$ ./test.sh
+# ./test.sh
 ```
 
 See below for more details.
