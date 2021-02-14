@@ -4,6 +4,20 @@ Build requirements:
 * llvm, clang, (gcc)
 * libbpf
 
+Quick build:
+
+```console
+$ ./build.sh
+```
+
+Testing:
+
+```console
+$ ./test.sh
+```
+
+See below for more details.
+
 ## user space part
 
 Building with gcc:
