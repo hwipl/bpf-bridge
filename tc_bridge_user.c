@@ -23,6 +23,8 @@
 /* entry in the mac address hash map */
 struct mac_table_entry {
 	__u32 ifindex;
+	__u32 pad;
+	__u64 ts;
 };
 
 /* operations when iterating interface map entries */
@@ -125,14 +127,14 @@ void dump_mac_table() {
 	__u8 next_key[6] = {0, 0, 0, 0, 0, 0};
 	__u8 cur_key[6] = {0, 0, 0, 0, 0, 0};
 	struct mac_table_entry entry;
-	printf("mac          --> ifindex\n");
-	printf("========================\n");
+	printf("mac          --> ifindex, ts\n");
+	printf("============================\n");
 	while (bpf_map_get_next_key(mac_table_fd, cur_key, next_key) == 0) {
 		bpf_map_lookup_elem(mac_table_fd, next_key, &entry);
 		for (int i = 0; i < 6; i++) {
 			printf("%02x", next_key[i]);
 		}
-		printf(" --> %d\n", entry.ifindex);
+		printf(" --> %d, %llu\n", entry.ifindex, entry.ts);
 		memcpy(cur_key, next_key, 6);
 	}
 }
