@@ -35,6 +35,8 @@ struct bpf_elf_map SEC("maps") bpf_bridge_ifs = {
 /* entry in the mac address hash map below */
 struct mac_table_entry {
 	__u32 ifindex;
+	__u32 pad;
+	__u64 ts;
 };
 
 /* hash map for mapping mac address to interface index */
@@ -88,8 +90,10 @@ int _bridge_forward(struct __sk_buff *skb)
 	/* add ingress interface and source mac of packet to macs map */
 	__u32 in_ifindex = skb->ingress_ifindex;
 	uint8_t *src_mac = eth->ether_shost;
+	__u64 ts = bpf_ktime_get_ns();
 	struct mac_table_entry in_entry = {
 		.ifindex = in_ifindex,
+		.ts = ts,
 	};
 	bpf_map_update_elem(&bpf_bridge_mac_table, src_mac, &in_entry, BPF_ANY);
 
