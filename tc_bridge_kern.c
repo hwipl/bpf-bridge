@@ -32,11 +32,16 @@ struct bpf_elf_map SEC("maps") bpf_bridge_ifs = {
 	.max_elem = 16,
 };
 
+/* entry in the mac address hash map below */
+struct mac_table_entry {
+	__u32 ifindex;
+};
+
 /* hash map for mapping mac address to interface index */
 struct bpf_elf_map SEC("maps") bpf_bridge_mac_table = {
 	.type = BPF_MAP_TYPE_LRU_HASH,
 	.size_key = sizeof(struct ether_addr),
-	.size_value = sizeof(__u32),
+	.size_value = sizeof(struct mac_table_entry),
 	.pinning = PIN_GLOBAL_NS,
 	.max_elem = 2048,
 };
@@ -83,8 +88,10 @@ int _bridge_forward(struct __sk_buff *skb)
 	/* add ingress interface and source mac of packet to macs map */
 	__u32 in_ifindex = skb->ingress_ifindex;
 	uint8_t *src_mac = eth->ether_shost;
-	bpf_map_update_elem(&bpf_bridge_mac_table, src_mac, &in_ifindex,
-			    BPF_ANY);
+	struct mac_table_entry in_entry = {
+		.ifindex = in_ifindex,
+	};
+	bpf_map_update_elem(&bpf_bridge_mac_table, src_mac, &in_entry, BPF_ANY);
 
 	/* forward multicast packet */
 	uint8_t *dst_mac = eth->ether_dhost;
@@ -94,10 +101,10 @@ int _bridge_forward(struct __sk_buff *skb)
 	}
 
 	/* forward unicast packet */
-	__u32 *out_ifindex = bpf_map_lookup_elem(&bpf_bridge_mac_table,
-						 dst_mac);
-	if (!out_ifindex) {
+	struct mac_table_entry *out_entry =
+		bpf_map_lookup_elem(&bpf_bridge_mac_table, dst_mac);
+	if (!out_entry) {
 		return TC_ACT_OK;
 	}
-	return bpf_redirect(*out_ifindex, 0);
+	return bpf_redirect(out_entry->ifindex, 0);
 }
