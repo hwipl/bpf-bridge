@@ -18,6 +18,9 @@ NS_BRIDGE="bpf-bridge-test-bridge"
 NS_CLIENT1="bpf-bridge-test-client1"
 NS_CLIENT2="bpf-bridge-test-client2"
 
+# extra bpf file system
+BPFFS=/tmp/bpf-bridge-test-bpffs
+
 # build everything for testing
 function build {
 	echo "Building everything..."
@@ -57,7 +60,6 @@ function delete_namespaces {
 # mount bpf filesystem in bridge network namespace
 function mount_bpffs {
 	echo "Mounting extra bpf filesystem..."
-	BPFFS=/tmp/bpf-bridge-test-bpffs
 	mkdir $BPFFS
 	$MOUNT -t bpf bpf $BPFFS
 
@@ -221,7 +223,7 @@ function run_test {
 	echo "Running test..."
 
 	# test connectivity with ping from client1 to client2
-	$IP netns exec $NS_CLIENT1 $PING -c 10 192.168.1.2
+	$IP netns exec $NS_CLIENT1 $PING -c 3 192.168.1.2
 
 	if [[ "$VERBOSE" == false ]]; then
 		return
@@ -230,6 +232,12 @@ function run_test {
 	# show bridge mac address table
 	echo "Bridge mac address table:"
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER -s
+
+	# dump bpf maps
+	echo "Bridge bpf_bridge_ifs:"
+	bpftool map dump pinned $BPFFS/tc/globals/bpf_bridge_ifs
+	echo "Bridge bpf_bridge_mac_table:"
+	bpftool map dump pinned $BPFFS/tc/globals/bpf_bridge_mac_table
 }
 
 # set verbose mode with command line argument "-v"
