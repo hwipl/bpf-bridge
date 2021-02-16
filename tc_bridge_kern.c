@@ -115,6 +115,7 @@ int _bridge_forward(struct __sk_buff *skb)
 	}
 	if (ts - out_entry->ts > MAX_MAC_AGE) {
 		/* entry is too old */
+		bpf_map_delete_elem(&bpf_bridge_mac_table, dst_mac);
 		return TC_ACT_OK;
 	}
 	return bpf_redirect(out_entry->ifindex, 0);
