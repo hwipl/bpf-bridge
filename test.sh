@@ -18,13 +18,15 @@ NS_BRIDGE="bpf-bridge-test-bridge"
 NS_CLIENT1="bpf-bridge-test-client1"
 NS_CLIENT2="bpf-bridge-test-client2"
 
-# extra bpf file system
+# extra bpf file system and pinned bpf map file names
 BPFFS=/tmp/bpf-bridge-test-bpffs
+INTERFACE_MAP=$BPFFS/tc/globals/bpf_bridge_ifs
+MAC_TABLE_MAP=$BPFFS/tc/globals/bpf_bridge_mac_table
 
 # build everything for testing
 function build {
 	echo "Building everything..."
-	$BUILD test
+	$BUILD
 }
 
 # create testing network namespaces
@@ -193,29 +195,41 @@ echo "Adding interfaces to bridge interface map..."
 		$CAT /sys/class/net/veth0/ifindex)
 	veth1_ifindex=$($IP netns exec $NS_BRIDGE \
 		$CAT /sys/class/net/veth1/ifindex)
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -a "$veth0_ifindex"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -a "$veth1_ifindex"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-a "$veth0_ifindex"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-a "$veth1_ifindex"
 
 	if [[ "$VERBOSE" == false ]]; then
 		return
 	fi
 
 	echo "Bridge interface map interfaces:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -l
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-l
 }
 
 # delete interfaces from bridge interface map
 function delete_interfaces {
 	echo "Removing interfaces from bridge interface map..."
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -d "$veth0_ifindex"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -d "$veth1_ifindex"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-d "$veth0_ifindex"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-d "$veth1_ifindex"
 
 	if [[ "$VERBOSE" == false ]]; then
 		return
 	fi
 
 	echo "Bridge interface map interfaces:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -l
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-l
 }
 
 # run test(s)
@@ -231,7 +245,9 @@ function run_test {
 
 	# show bridge mac address table
 	echo "Bridge mac address table:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER -s
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-s
 
 	# dump bpf maps
 	echo "Bridge bpf_bridge_ifs:"
