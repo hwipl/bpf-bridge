@@ -20,6 +20,9 @@
 #define interfaces_file "/tmp/bpf-bridge-test-bpffs/tc/globals/bpf_bridge_ifs"
 #endif
 
+/* specify bpf maps to be used */
+const char *interfaces_map = interfaces_file;
+
 /* entry in the mac address hash map */
 struct mac_table_entry {
 	__u32 ifindex;
@@ -146,6 +149,9 @@ void print_usage(char *name) {
 	printf("       -d <ifindex>      remove interface\n");
 	printf("       -l                list interfaces\n");
 	printf("       -s                show mac addresses\n");
+	printf("       -X                set interface bpf map\n"
+	       "                         (default: %s)\n",
+	       interfaces_file);
 }
 
 /* parse command line arguments and run everything from there */
@@ -153,7 +159,7 @@ int parse_args(int argc, char **argv) {
 	int add = 0, del = 0, list = 0, show = 0;
 	int ifindex;
 	int opt;
-	while ((opt = getopt(argc, argv, "a:d:ls")) != -1) {
+	while ((opt = getopt(argc, argv, "a:d:lsX:")) != -1) {
 		switch (opt) {
 		case 'a':
 			/* add an interface */
@@ -172,6 +178,9 @@ int parse_args(int argc, char **argv) {
 		case 's':
 			/* dump mac addresses */
 			show = 1;
+			break;
+		case 'X':
+			interfaces_map = optarg;
 			break;
 		default:
 			print_usage(argv[0]);
