@@ -150,33 +150,61 @@ void print_usage(char *name) {
 
 /* parse command line arguments and run everything from there */
 int parse_args(int argc, char **argv) {
+	int add = 0, del = 0, list = 0, show = 0;
 	int ifindex;
 	int opt;
 	while ((opt = getopt(argc, argv, "a:d:ls")) != -1) {
 		switch (opt) {
 		case 'a':
 			/* add an interface */
+			add = 1;
 			ifindex = atoi(optarg);
-			add_interface(ifindex);
-			return 0;
+			break;
 		case 'd':
 			/* remove an interface */
+			del = 1;
 			ifindex = atoi(optarg);
-			del_interface(ifindex);
-			return 0;
+			break;
 		case 'l':
 			/* list interfaces */
-			dump_interfaces();
-			return 0;
+			list = 1;
+			break;
 		case 's':
 			/* dump mac addresses */
-			dump_mac_table();
-			return 0;
+			show = 1;
+			break;
 		default:
 			print_usage(argv[0]);
 			return 0;
 		}
 	}
+
+	/* only allow exactly one command */
+	if (add + del + list + show != 1) {
+		print_usage(argv[0]);
+		return 0;
+	}
+
+	if (add) {
+		/* add an interface */
+		add_interface(ifindex);
+	}
+
+	if (del) {
+		/* remove an interface */
+		del_interface(ifindex);
+	}
+
+	if (list) {
+		/* list interfaces */
+		dump_interfaces();
+	}
+
+	if (show) {
+		/* dump mac addresses */
+		dump_mac_table();
+	}
+
 	return 0;
 }
 
