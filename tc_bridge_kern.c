@@ -8,6 +8,9 @@
 /* ethernet header */
 #include <net/ethernet.h>
 
+/* maximum age of a mac in the mac table (300s) */
+#define MAX_MAC_AGE 300000000000
+
 /* set license to gpl */
 char _license[] SEC("license") = "GPL";
 
@@ -108,6 +111,10 @@ int _bridge_forward(struct __sk_buff *skb)
 	struct mac_table_entry *out_entry =
 		bpf_map_lookup_elem(&bpf_bridge_mac_table, dst_mac);
 	if (!out_entry) {
+		return TC_ACT_OK;
+	}
+	if (ts - out_entry->ts > MAX_MAC_AGE) {
+		/* entry is too old */
 		return TC_ACT_OK;
 	}
 	return bpf_redirect(out_entry->ifindex, 0);
