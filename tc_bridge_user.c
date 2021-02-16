@@ -21,7 +21,7 @@
 #endif
 
 /* specify bpf maps to be used */
-const char *interfaces_map = interfaces_file;
+const char *interface_map = interfaces_file;
 const char *mac_table_map = mac_table_file;
 
 /* entry in the mac address hash map */
@@ -43,9 +43,9 @@ enum iter_if_ops {
 /* iterate over interfaces map and call f(key, value) on each entry */
 int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 	/* open interfaces map */
-	int interfaces_fd = bpf_obj_get(interfaces_file);
+	int interfaces_fd = bpf_obj_get(interface_map);
 	if (interfaces_fd < 0) {
-		fprintf(stderr, "bpf_obj_get(%s): %s(%d)\n", interfaces_file,
+		fprintf(stderr, "bpf_obj_get(%s): %s(%d)\n", interface_map,
 			strerror(errno), errno);
 		return 0;
 	}
@@ -120,9 +120,9 @@ void dump_interfaces() {
 /* dump content of bridge mac address table to console */
 void dump_mac_table() {
 	/* open bridge mac table */
-	int mac_table_fd = bpf_obj_get(mac_table_file);
+	int mac_table_fd = bpf_obj_get(mac_table_map);
 	if (mac_table_fd < 0) {
-		fprintf(stderr, "bpf_obj_get(%s): %s(%d)\n", mac_table_file,
+		fprintf(stderr, "bpf_obj_get(%s): %s(%d)\n", mac_table_map,
 			strerror(errno), errno);
 		return;
 	}
@@ -184,7 +184,7 @@ int parse_args(int argc, char **argv) {
 			show = 1;
 			break;
 		case 'X':
-			interfaces_map = optarg;
+			interface_map = optarg;
 			break;
 		case 'Y':
 			mac_table_map = optarg;
