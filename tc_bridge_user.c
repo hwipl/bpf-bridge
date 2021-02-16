@@ -7,18 +7,11 @@
 #include <stdio.h>
 #include <errno.h>
 
-#ifndef TEST
 /* pinned bpf map file of bridge mac table */
 #define mac_table_file "/sys/fs/bpf/tc/globals/bpf_bridge_mac_table"
 
 /* pinned bpf map file of bridge interfaces */
 #define interfaces_file "/sys/fs/bpf/tc/globals/bpf_bridge_ifs"
-
-#else
-/* use pinned bpf map files in other bpffs for testing in network namespaces */
-#define mac_table_file "/tmp/bpf-bridge-test-bpffs/tc/globals/bpf_bridge_mac_table"
-#define interfaces_file "/tmp/bpf-bridge-test-bpffs/tc/globals/bpf_bridge_ifs"
-#endif
 
 /* specify bpf maps to be used */
 const char *interface_map = interfaces_file;
