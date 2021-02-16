@@ -22,6 +22,7 @@
 
 /* specify bpf maps to be used */
 const char *interfaces_map = interfaces_file;
+const char *mac_table_map = mac_table_file;
 
 /* entry in the mac address hash map */
 struct mac_table_entry {
@@ -152,6 +153,9 @@ void print_usage(char *name) {
 	printf("       -X                set interface bpf map\n"
 	       "                         (default: %s)\n",
 	       interfaces_file);
+	printf("       -Y                set mac table bpf map\n"
+	       "                         (default: %s)\n",
+	       mac_table_file);
 }
 
 /* parse command line arguments and run everything from there */
@@ -159,7 +163,7 @@ int parse_args(int argc, char **argv) {
 	int add = 0, del = 0, list = 0, show = 0;
 	int ifindex;
 	int opt;
-	while ((opt = getopt(argc, argv, "a:d:lsX:")) != -1) {
+	while ((opt = getopt(argc, argv, "a:d:lsX:Y:")) != -1) {
 		switch (opt) {
 		case 'a':
 			/* add an interface */
@@ -181,6 +185,9 @@ int parse_args(int argc, char **argv) {
 			break;
 		case 'X':
 			interfaces_map = optarg;
+			break;
+		case 'Y':
+			mac_table_map = optarg;
 			break;
 		default:
 			print_usage(argv[0]);
