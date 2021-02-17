@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 
 /* pinned bpf map file of bridge mac table */
 #define mac_table_file "/sys/fs/bpf/tc/globals/bpf_bridge_mac_table"
@@ -121,17 +122,21 @@ void dump_mac_table() {
 	}
 
 	/* dump all bridge mac table entries */
+	struct timespec time;
+	clock_gettime(CLOCK_MONOTONIC, &time);
+	__u64 cur_ts = time.tv_sec * 1000000000UL + time.tv_nsec;
 	__u8 next_key[6] = {0, 0, 0, 0, 0, 0};
 	__u8 cur_key[6] = {0, 0, 0, 0, 0, 0};
 	struct mac_table_entry entry;
-	printf("mac          --> ifindex, ts\n");
-	printf("============================\n");
+	printf("mac          --> ifindex, age\n");
+	printf("=============================\n");
 	while (bpf_map_get_next_key(mac_table_fd, cur_key, next_key) == 0) {
 		bpf_map_lookup_elem(mac_table_fd, next_key, &entry);
 		for (int i = 0; i < 6; i++) {
 			printf("%02x", next_key[i]);
 		}
-		printf(" --> %d, %llu\n", entry.ifindex, entry.ts);
+		printf(" --> %7d, %3llu\n", entry.ifindex,
+		       (cur_ts - entry.ts) / 1000000000UL);
 		memcpy(cur_key, next_key, 6);
 	}
 }
