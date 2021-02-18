@@ -66,10 +66,10 @@ void _forward_clone(struct __sk_buff *skb, __u32 *in_ifindex,
 	bpf_clone_redirect(skb, *out_ifindex, 0);
 }
 
-/* forward mcast packet in skb received on interface index in_ifindex to all
- * interfaces of the bridge
+/* forward packet in skb received on interface index in_ifindex to all
+ * interfaces of the bridge (flooding)
  */
-void _forward_mcast(struct __sk_buff *skb, __u32 *in_ifindex)
+void _forward_flood(struct __sk_buff *skb, __u32 *in_ifindex)
 {
 	for (int i = 0; i < 16; i++) {
 		int key = i;
@@ -103,7 +103,7 @@ int _bridge_forward(struct __sk_buff *skb)
 	/* forward multicast packet */
 	uint8_t *dst_mac = eth->ether_dhost;
 	if (dst_mac[0] & 1) {
-		_forward_mcast(skb, &in_ifindex);
+		_forward_flood(skb, &in_ifindex);
 		return TC_ACT_OK;
 	}
 
