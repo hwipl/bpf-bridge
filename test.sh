@@ -254,6 +254,34 @@ function run_test {
 	bpftool map dump pinned $BPFFS/tc/globals/bpf_bridge_ifs
 	echo "Bridge bpf_bridge_mac_table:"
 	bpftool map dump pinned $BPFFS/tc/globals/bpf_bridge_mac_table
+
+	# disable bridge interfaces
+	echo "Disabling bridge interfaces..."
+	$IP netns exec $NS_BRIDGE $IP link set veth0 down
+	$IP netns exec $NS_BRIDGE $IP link set veth1 down
+
+	# wait
+	echo "Waiting 3 seconds..."
+	sleep 3
+	echo "Bridge mac address table:"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-s
+
+	# wait
+	echo "Waiting 3 seconds..."
+	sleep 3
+	echo "Bridge mac address table:"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-s
+
+	echo "Waiting 3 seconds..."
+	sleep 3
+	echo "Bridge mac address table:"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-s
 }
 
 # set verbose mode with command line argument "-v"
