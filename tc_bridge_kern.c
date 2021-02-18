@@ -111,11 +111,13 @@ int _bridge_forward(struct __sk_buff *skb)
 	struct mac_table_entry *out_entry =
 		bpf_map_lookup_elem(&bpf_bridge_mac_table, dst_mac);
 	if (!out_entry) {
+		_forward_flood(skb, &in_ifindex);
 		return TC_ACT_OK;
 	}
 	if (ts - out_entry->ts > MAX_MAC_AGE) {
 		/* entry is too old */
 		bpf_map_delete_elem(&bpf_bridge_mac_table, dst_mac);
+		_forward_flood(skb, &in_ifindex);
 		return TC_ACT_OK;
 	}
 	return bpf_redirect(out_entry->ifindex, 0);
