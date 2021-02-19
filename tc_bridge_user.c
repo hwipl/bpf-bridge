@@ -34,7 +34,7 @@ enum iter_if_ops {
 	PRINT,
 };
 
-/* iterate over interfaces map and call f(key, value) on each entry */
+/* iterate over interfaces map and perform op on each entry */
 int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 	/* open interfaces map */
 	int interfaces_fd = bpf_obj_get(interface_map);
@@ -44,7 +44,7 @@ int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
 		return 0;
 	}
 
-	/* dump interface entries */
+	/* iterate over interface entries */
 	int next_key = -1;
 	int cur_key = -1;
 	__u32 cur_value;
