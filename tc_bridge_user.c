@@ -26,7 +26,7 @@ struct mac_table_entry {
 };
 
 /* operations when iterating interface map entries */
-enum iter_if_ops {
+enum iter_ops {
 	NONE,
 	ADD,
 	DELETE,
@@ -35,7 +35,7 @@ enum iter_if_ops {
 };
 
 /* iterate over interfaces map and perform op on each entry */
-int _iterate_interfaces(enum iter_if_ops op, __u32 value) {
+int _iterate_interfaces(enum iter_ops op, __u32 value) {
 	/* open interfaces map */
 	int interfaces_fd = bpf_obj_get(interface_map);
 	if (interfaces_fd < 0) {
