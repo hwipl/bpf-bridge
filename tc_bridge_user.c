@@ -138,6 +138,10 @@ int _iterate_mac_table(enum iter_ops op, __u32 value) {
 		case NONE:
 		case ADD:
 		case DELETE:
+			if (entry.ifindex == value) {
+				bpf_map_delete_elem(mac_table_fd, &cur_key);
+			}
+			break;
 		case FIND:
 			break;
 		case PRINT:
@@ -151,6 +155,11 @@ int _iterate_mac_table(enum iter_ops op, __u32 value) {
 	}
 
 	return 0;
+}
+
+/* remove mac table entries with interface index ifindex */
+void del_mac_table(__u32 ifindex) {
+	_iterate_mac_table(DELETE, ifindex);
 }
 
 /* dump content of bridge mac address table to console */
@@ -226,6 +235,7 @@ int parse_args(int argc, char **argv) {
 	if (del) {
 		/* remove an interface */
 		del_interface(ifindex);
+		del_mac_table(ifindex);
 	}
 
 	if (list) {
