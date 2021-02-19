@@ -111,34 +111,53 @@ void dump_interfaces() {
 	_iterate_interfaces(PRINT, 0);
 }
 
-/* dump content of bridge mac address table to console */
-void dump_mac_table() {
+/* iterate over mac table map and perform op on each entry */
+int _iterate_mac_table(enum iter_ops op, __u32 value) {
 	/* open bridge mac table */
 	int mac_table_fd = bpf_obj_get(mac_table_map);
 	if (mac_table_fd < 0) {
 		fprintf(stderr, "bpf_obj_get(%s): %s(%d)\n", mac_table_map,
 			strerror(errno), errno);
-		return;
+		return 0;
 	}
 
-	/* dump all bridge mac table entries */
+	/* iterate over all bridge mac table entries */
 	struct timespec time;
 	clock_gettime(CLOCK_MONOTONIC, &time);
 	__u64 cur_ts = time.tv_sec * 1000000000UL + time.tv_nsec;
 	__u8 next_key[6] = {0, 0, 0, 0, 0, 0};
 	__u8 cur_key[6] = {0, 0, 0, 0, 0, 0};
 	struct mac_table_entry entry;
-	printf("mac          --> ifindex, age\n");
-	printf("=============================\n");
+
 	while (bpf_map_get_next_key(mac_table_fd, cur_key, next_key) == 0) {
 		bpf_map_lookup_elem(mac_table_fd, next_key, &entry);
-		for (int i = 0; i < 6; i++) {
-			printf("%02x", next_key[i]);
-		}
-		printf(" --> %7d, %3llu\n", entry.ifindex,
-		       (cur_ts - entry.ts) / 1000000000UL);
 		memcpy(cur_key, next_key, 6);
+
+		/* perform "op" on each entry */
+		switch (op) {
+		case NONE:
+		case ADD:
+		case DELETE:
+		case FIND:
+			break;
+		case PRINT:
+			for (int i = 0; i < 6; i++) {
+				printf("%02x", cur_key[i]);
+			}
+			printf(" --> %7d, %3llu\n", entry.ifindex,
+			       (cur_ts - entry.ts) / 1000000000UL);
+			break;
+		}
 	}
+
+	return 0;
+}
+
+/* dump content of bridge mac address table to console */
+void dump_mac_table() {
+	printf("mac          --> ifindex, age\n");
+	printf("=============================\n");
+	_iterate_mac_table(PRINT, 0);
 }
 
 /* print usage to console */
