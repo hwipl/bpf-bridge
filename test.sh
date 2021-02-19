@@ -230,6 +230,11 @@ function delete_interfaces {
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
 		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
 		-l
+
+	echo "Bridge mac address table:"
+	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
+		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
+		-s
 }
 
 # run test(s)
