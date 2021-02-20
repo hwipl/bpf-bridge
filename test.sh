@@ -6,7 +6,6 @@ TC=/usr/bin/tc
 PING=/usr/bin/ping
 BRIDGE_USER=./tc_bridge_user
 
-CAT=/usr/bin/cat
 MOUNT=/usr/bin/mount
 UMOUNT=/usr/bin/umount
 
@@ -191,16 +190,12 @@ function detach_bpf {
 # add interfaces to bridge interface map
 function add_interfaces {
 echo "Adding interfaces to bridge interface map..."
-	veth0_ifindex=$($IP netns exec $NS_BRIDGE \
-		$CAT /sys/class/net/veth0/ifindex)
-	veth1_ifindex=$($IP netns exec $NS_BRIDGE \
-		$CAT /sys/class/net/veth1/ifindex)
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
 		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-a "$veth0_ifindex"
+		-a veth0
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
 		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-a "$veth1_ifindex"
+		-a veth1
 
 	if [[ "$VERBOSE" == false ]]; then
 		return
@@ -217,10 +212,10 @@ function delete_interfaces {
 	echo "Removing interfaces from bridge interface map..."
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
 		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-d "$veth0_ifindex"
+		-d veth0
 	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
 		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-d "$veth1_ifindex"
+		-d veth1
 
 	if [[ "$VERBOSE" == false ]]; then
 		return
