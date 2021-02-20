@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <time.h>
+#include <net/if.h>
 
 /* pinned bpf map file of bridge mac table */
 #define mac_table_file "/sys/fs/bpf/tc/globals/bpf_bridge_mac_table"
@@ -172,8 +173,8 @@ void dump_mac_table() {
 /* print usage to console */
 void print_usage(char *name) {
 	printf("Usage: %s [...]\n", name);
-	printf("       -a <ifindex>      add interface\n");
-	printf("       -d <ifindex>      remove interface\n");
+	printf("       -a <interface>    add interface\n");
+	printf("       -d <interface>    remove interface\n");
 	printf("       -l                list interfaces\n");
 	printf("       -s                show mac addresses\n");
 	printf("       -X                set interface bpf map\n"
@@ -194,12 +195,18 @@ int parse_args(int argc, char **argv) {
 		case 'a':
 			/* add an interface */
 			add = 1;
-			ifindex = atoi(optarg);
+			ifindex = if_nametoindex(optarg);
+			if (!ifindex) {
+				ifindex = atoi(optarg);
+			}
 			break;
 		case 'd':
 			/* remove an interface */
 			del = 1;
-			ifindex = atoi(optarg);
+			ifindex = if_nametoindex(optarg);
+			if (!ifindex) {
+				ifindex = atoi(optarg);
+			}
 			break;
 		case 'l':
 			/* list interfaces */
