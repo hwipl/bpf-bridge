@@ -5,9 +5,9 @@ TC=/usr/bin/tc
 BRIDGE_USER=./tc_bridge_user
 
 # bpf file system and pinned bpf map file names
-BPFFS=/sys/fs/bpf
-INTERFACE_MAP=$BPFFS/tc/globals/bpf_bridge_ifs
-MAC_TABLE_MAP=$BPFFS/tc/globals/bpf_bridge_mac_table
+BPFFS="${BPFFS:-/sys/fs/bpf}"
+INTERFACE_MAP="${INTERFACE_MAP:-$BPFFS/tc/globals/bpf_bridge_ifs}"
+MAC_TABLE_MAP="${MAC_TABLE_MAP:-$BPFFS/tc/globals/bpf_bridge_mac_table}"
 
 # add device to to bridge
 function addif {
@@ -19,7 +19,7 @@ function addif {
 		direct-action obj tc_bridge_kern.o sec bridge_forward
 
 	# add device to bpf interface map
-	$BRIDGE_USER -X $INTERFACE_MAP -Y $MAC_TABLE_MAP -a "$dev"
+	$BRIDGE_USER -X "$INTERFACE_MAP" -Y "$MAC_TABLE_MAP" -a "$dev"
 }
 
 # remove device from bridge
@@ -27,7 +27,7 @@ function delif {
 	dev=$1
 
 	# remove device from bpf interface map
-	$BRIDGE_USER -X $INTERFACE_MAP -Y $MAC_TABLE_MAP -d "$dev"
+	$BRIDGE_USER -X "$INTERFACE_MAP" -Y "$MAC_TABLE_MAP" -d "$dev"
 
 	# remove bpf program from device
 	$TC qdisc del dev "$dev" clsact
@@ -35,12 +35,12 @@ function delif {
 
 # show interfaces of bridge
 function show {
-	$BRIDGE_USER -X $INTERFACE_MAP -Y $MAC_TABLE_MAP -l
+	$BRIDGE_USER -X "$INTERFACE_MAP" -Y "$MAC_TABLE_MAP" -l
 }
 
 # show mac addresses
 function showmacs {
-	$BRIDGE_USER -X $INTERFACE_MAP -Y $MAC_TABLE_MAP -s
+	$BRIDGE_USER -X "$INTERFACE_MAP" -Y "$MAC_TABLE_MAP" -s
 }
 
 # print usage and exit
