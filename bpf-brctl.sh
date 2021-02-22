@@ -33,22 +33,41 @@ function delif {
 	$TC qdisc del dev "$dev" clsact
 }
 
+# show interfaces of bridge
+function show {
+	$BRIDGE_USER -X $INTERFACE_MAP -Y $MAC_TABLE_MAP -l
+}
+
 # print usage and exit
 USAGE="Usage: $0 [commands]
         addif <device>		add interface to bridge
         delif <device>          remove interface from bridge
+        show                    show bridge interfaces
 "
 function usage {
 	echo -n "$USAGE"
 	exit 1
 }
 
+# require at least 1 command line argument
+if [[ "$#" -lt 1 ]]; then
+      usage
+fi
+
+# handle command line arguments without extra parameters
+case "$1" in
+	"show")
+		show
+		exit 0
+		;;
+esac
+
 # require at least 2 command line arguments
 if [[ "$#" -lt 2 ]]; then
       usage
 fi
 
-# handle command line arguments
+# handle command line arguments with one extra parameter
 case "$1" in
 	"addif")
 		# add interface to bridge
