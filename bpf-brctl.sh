@@ -34,9 +34,12 @@ function delif {
 }
 
 # print usage and exit
+USAGE="Usage: $0 [commands]
+        addif <device>		add interface to bridge
+        delif <device>          remove interface from bridge
+"
 function usage {
-	USAGE="$0 addif|delif <device>"
-	echo "$USAGE"
+	echo -n "$USAGE"
 	exit 1
 }
 
