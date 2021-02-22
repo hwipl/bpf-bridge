@@ -4,7 +4,7 @@ BUILD=./build.sh
 IP=/usr/bin/ip
 TC=/usr/bin/tc
 PING=/usr/bin/ping
-BRIDGE_USER=./tc_bridge_user
+BRCTL=./bpf-brctl.sh
 
 MOUNT=/usr/bin/mount
 UMOUNT=/usr/bin/umount
@@ -18,7 +18,7 @@ NS_CLIENT1="bpf-bridge-test-client1"
 NS_CLIENT2="bpf-bridge-test-client2"
 
 # extra bpf file system and pinned bpf map file names
-BPFFS=/tmp/bpf-bridge-test-bpffs
+export BPFFS=/tmp/bpf-bridge-test-bpffs
 INTERFACE_MAP=$BPFFS/tc/globals/bpf_bridge_ifs
 MAC_TABLE_MAP=$BPFFS/tc/globals/bpf_bridge_mac_table
 
@@ -153,83 +153,43 @@ function add_ips {
 	$IP netns exec $NS_CLIENT2 $IP address show dev veth10
 }
 
-# attach bpf program to bridge
-function attach_bpf {
-	echo "Attaching bpf program to bridge..."
-	$IP netns exec $NS_BRIDGE $TC qdisc add dev veth0 clsact
-	$IP netns exec $NS_BRIDGE $TC filter add dev veth0 ingress bpf \
-		direct-action obj tc_bridge_kern.o sec bridge_forward
-	$IP netns exec $NS_BRIDGE $TC qdisc add dev veth1 clsact
-	$IP netns exec $NS_BRIDGE $TC filter add dev veth1 ingress bpf \
-		direct-action obj tc_bridge_kern.o sec bridge_forward
-
-	if [[ "$VERBOSE" == false ]]; then
-		return
-	fi
-
-	echo "Bridge tc filters:"
-	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
-	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
-}
-
-# detach bpf program from bridge
-function detach_bpf {
-	echo "Removing bpf program from bridge..."
-	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth0 clsact
-	$IP netns exec $NS_BRIDGE $TC qdisc del dev veth1 clsact
-
-	if [[ "$VERBOSE" == false ]]; then
-		return
-	fi
-
-	echo "Bridge tc filters:"
-	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
-	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
-}
-
-# add interfaces to bridge interface map
+# add interfaces to bridge
 function add_interfaces {
-echo "Adding interfaces to bridge interface map..."
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-a veth0
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-a veth1
+	echo "Adding interfaces to bridge..."
+	$IP netns exec $NS_BRIDGE $BRCTL addif veth0
+	$IP netns exec $NS_BRIDGE $BRCTL addif veth1
 
 	if [[ "$VERBOSE" == false ]]; then
 		return
 	fi
 
+	echo "Bridge tc filters:"
+	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
+	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
+
 	echo "Bridge interface map interfaces:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-l
+	$IP netns exec $NS_BRIDGE $BRCTL show
 }
 
-# delete interfaces from bridge interface map
+# delete interfaces from bridge
 function delete_interfaces {
-	echo "Removing interfaces from bridge interface map..."
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-d veth0
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-d veth1
+	echo "Removing interfaces from bridge..."
+	$IP netns exec $NS_BRIDGE $BRCTL delif veth0
+	$IP netns exec $NS_BRIDGE $BRCTL delif veth1
 
 	if [[ "$VERBOSE" == false ]]; then
 		return
 	fi
 
+	echo "Bridge tc filters:"
+	$IP netns exec $NS_BRIDGE $TC filter show dev veth0 ingress
+	$IP netns exec $NS_BRIDGE $TC filter show dev veth1 ingress
+
 	echo "Bridge interface map interfaces:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-l
+	$IP netns exec $NS_BRIDGE $BRCTL show
 
 	echo "Bridge mac address table:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-s
+	$IP netns exec $NS_BRIDGE $BRCTL showmacs
 }
 
 # run test(s)
@@ -245,15 +205,13 @@ function run_test {
 
 	# show bridge mac address table
 	echo "Bridge mac address table:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-s
+	$IP netns exec $NS_BRIDGE $BRCTL showmacs
 
 	# dump bpf maps
 	echo "Bridge bpf_bridge_ifs:"
-	bpftool map dump pinned $BPFFS/tc/globals/bpf_bridge_ifs
+	bpftool map dump pinned $INTERFACE_MAP
 	echo "Bridge bpf_bridge_mac_table:"
-	bpftool map dump pinned $BPFFS/tc/globals/bpf_bridge_mac_table
+	bpftool map dump pinned $MAC_TABLE_MAP
 
 	# disable bridge interfaces
 	echo "Disabling bridge interfaces..."
@@ -264,24 +222,18 @@ function run_test {
 	echo "Waiting 3 seconds..."
 	sleep 3
 	echo "Bridge mac address table:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-s
+	$IP netns exec $NS_BRIDGE $BRCTL showmacs
 
 	# wait
 	echo "Waiting 3 seconds..."
 	sleep 3
 	echo "Bridge mac address table:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-s
+	$IP netns exec $NS_BRIDGE $BRCTL showmacs
 
 	echo "Waiting 3 seconds..."
 	sleep 3
 	echo "Bridge mac address table:"
-	$IP netns exec $NS_BRIDGE $BRIDGE_USER \
-		-X $INTERFACE_MAP -Y $MAC_TABLE_MAP \
-		-s
+	$IP netns exec $NS_BRIDGE $BRCTL showmacs
 }
 
 # set verbose mode with command line argument "-v"
@@ -297,7 +249,6 @@ create_namespaces
 mount_bpffs
 add_veths
 add_ips
-attach_bpf
 add_interfaces
 
 # run tests
@@ -305,7 +256,6 @@ run_test
 
 # cleanup test environment
 delete_interfaces
-detach_bpf
 delete_veths
 umount_bpffs
 delete_namespaces
