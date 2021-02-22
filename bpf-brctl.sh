@@ -38,11 +38,17 @@ function show {
 	$BRIDGE_USER -X $INTERFACE_MAP -Y $MAC_TABLE_MAP -l
 }
 
+# show mac addresses
+function showmacs {
+	$BRIDGE_USER -X $INTERFACE_MAP -Y $MAC_TABLE_MAP -s
+}
+
 # print usage and exit
 USAGE="Usage: $0 [commands]
         addif <device>		add interface to bridge
         delif <device>          remove interface from bridge
         show                    show bridge interfaces
+        showmacs                show mac addresses
 "
 function usage {
 	echo -n "$USAGE"
@@ -58,6 +64,10 @@ fi
 case "$1" in
 	"show")
 		show
+		exit 0
+		;;
+	"showmacs")
+		showmacs
 		exit 0
 		;;
 esac
