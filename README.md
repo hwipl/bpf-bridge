@@ -16,6 +16,18 @@ Testing:
 # ./test.sh
 ```
 
+## Usage
+
+You can use the script `bpf-brctl.sh` to configure the bridge:
+
+```
+Usage: ./bpf-brctl.sh [commands]
+        addif <device>          add interface to bridge
+        delif <device>          remove interface from bridge
+        show                    show bridge interfaces
+        showmacs                show mac addresses
+```
+
 ## Details
 
 See below for more details.
