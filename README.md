@@ -1,5 +1,9 @@
 # bpf-bridge
 
+Simple implementation of a software ethernet bridge using bpf and tc.
+
+## Building
+
 Build requirements:
 * llvm, clang, (gcc)
 * libbpf
