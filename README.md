@@ -1,6 +1,6 @@
 # bpf-bridge
 
-Simple implementation of a software ethernet bridge using bpf and tc.
+Simple implementation of a software Ethernet bridge using eBPF and tc on Linux.
 
 ## Building
 
