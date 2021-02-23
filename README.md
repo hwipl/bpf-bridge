@@ -16,9 +16,11 @@ Testing:
 # ./test.sh
 ```
 
+## Details
+
 See below for more details.
 
-## user space part
+### user space part
 
 Building with gcc:
 
@@ -32,7 +34,7 @@ Building with clang:
 $ clang tc_bridge_user.c -o tc_bridge_user -lbpf
 ```
 
-## kernel part
+### kernel part
 
 Build instructions (based on `tc-bpf(8)`):
 
