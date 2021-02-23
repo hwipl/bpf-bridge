@@ -118,3 +118,9 @@ Dump mac table:
 ```console
 # bpftool map dump pinned /sys/fs/bpf/tc/globals/bpf_bridge_mac_table
 ```
+
+Dump interfaces:
+
+```console
+# bpftool map dump pinned /sys/fs/bpf/tc/globals/bpf_bridge_ifs
+```
