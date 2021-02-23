@@ -28,6 +28,40 @@ Usage: ./bpf-brctl.sh [commands]
         showmacs                show mac addresses
 ```
 
+## Examples
+
+Adding network interface `eth3` to the bridge:
+
+```console
+# ./bpf-brctl.sh addif eth3
+```
+
+Removing network interface `eth3` from the bridge:
+
+```console
+# ./bpf-brctl.sh delif eth3
+```
+
+Showing network interfaces of the bridge:
+
+```console
+# ./bpf-brctl.sh show
+slot: ifindex
+=============
+ 0:   3
+ 1:   5
+```
+
+Showing known mac addresses of the bridge:
+
+```console
+# ./bpf-brctl.sh showmacs
+mac          --> ifindex, age
+=============================
+ba55347b0dfe -->       3,   0
+3a40c855bd49 -->       5,   0
+```
+
 ## Details
 
 See below for more details.
